@@ -26,7 +26,6 @@
 
 #define MEMMEM_RELATIVE(iboot_in, bufstart, needle, needleLen) memmem(bufstart, iboot_in->len - ((char*)(bufstart) - (char*)iboot_in->buf), needle, needleLen)
 
-
 int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
 	printf("%s: Entering...\n", __FUNCTION__);
 
@@ -112,6 +111,10 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args) {
 	int null_str_reg = (ldr_rd_boot_args->rd == mov_insn->rs) ? mov_insn->rd : mov_insn->rs;
 
 	/* + 0x10: Some iBoots have the null string load after the CMP instruction... */
+    int os_vers = get_os_version(iboot_in);
+    if(os_vers <= 4) {
+        return 1;
+    }
 	void* ldr_null_str = find_last_LDR_rd((uintptr_t) (_cmp_insn + 0x10), 0x200, null_str_reg);
 	if(!ldr_null_str) {
 		printf("%s: Unable to find LDR R%d, =null_str\n", __FUNCTION__, null_str_reg);
@@ -193,7 +196,7 @@ int patch_debug_enabled(struct iboot_img* iboot_in) {
 		printf("%s: Unable to find appropriate BL insn.\n", __FUNCTION__);
 		return 0;
 	}
-
+    
 	printf("%s: Patching BL insn at %p...\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, get_value_for_dtre_bl));
 
 	/* BL get_dtre_value --> MOVS R0, #1; MOVS R0, #1 */
@@ -206,17 +209,110 @@ int patch_debug_enabled(struct iboot_img* iboot_in) {
 int patch_rsa_check(struct iboot_img* iboot_in) {
     printf("%s: Entering...\n", __FUNCTION__);
     
-    /* Find the BL verify_shsh instruction... */
+    int os_vers = get_os_version(iboot_in);
+    if(os_vers <= 4) {
+        
+    void* rsa_check_4 = find_rsa_check_4(iboot_in);
+    if(!find_rsa_check_4) {
+        printf("%s: Unable to find BL ECID!\n", __FUNCTION__);
+        return 0;
+    }
+        /* BL --> MOVS R0, #0; MOVS R0, #0 */
+        printf("%s: Patching RSA at %p...\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_check_4));
+        *(uint32_t*)rsa_check_4 = bswap32(0x00200020);
+    
+    void* ldr_ecid = find_ldr_ecid(iboot_in);
+    if(!ldr_ecid) {
+        printf("%s: Unable to find RSA check!\n", __FUNCTION__);
+        return 0;
+    }
+        /* BL --> MOVS R0, #0; MOVS R0, #0 */
+        printf("%s: Patching BL ECID at %p...\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_ecid));
+        *(uint32_t*)ldr_ecid = bswap32(0x00200020);
+        
+    void* ldr_bord = find_ldr_bord(iboot_in);
+    if(!ldr_bord) {
+        printf("%s: Unable to find BL BORD!\n", __FUNCTION__);
+        return 0;
+    }
+        /* BL --> MOVS R0, #0; MOVS R0, #0 */
+        printf("%s: Patching BL BORD at %p...\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_bord));
+        *(uint32_t*)ldr_bord = bswap32(0x00200020);
+        
+    void* ldr_prod = find_ldr_prod(iboot_in);
+    if(!ldr_prod) {
+        printf("%s: Unable to find BL PROD!\n", __FUNCTION__);
+        return 0;
+    }
+        /* BL --> MOVS R0, #0; MOVS R0, #0 */
+        printf("%s: Patching BL PROD at %p...\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_prod));
+        *(uint32_t*)ldr_prod = bswap32(0x00200020);
+        
+    void* ldr_sepo = find_ldr_sepo(iboot_in);
+    if(!ldr_sepo) {
+        printf("%s: Unable to find BL SEPO!\n", __FUNCTION__);
+        return 0;
+    }
+        /* BL --> MOVS R0, #0; MOVS R0, #0 */
+        printf("%s: Patching BL SEPO at %p...\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_sepo));
+        *(uint32_t*)ldr_sepo = bswap32(0x00200020);
+        
+        return 1;
+    }
+    
     void* bl_verify_shsh = find_bl_verify_shsh(iboot_in);
     if(!bl_verify_shsh) {
         printf("%s: Unable to find BL verify_shsh!\n", __FUNCTION__);
         return 0;
     }
-    
     printf("%s: Patching BL verify_shsh at %p...\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, bl_verify_shsh));
     
     /* BL verify_shsh --> MOVS R0, #0; STR R0, [R3] */
     *(uint32_t*)bl_verify_shsh = bswap32(0x00201860);
+    
+    printf("%s: Leaving...\n", __FUNCTION__);
+    return 1;
+}
+
+int patch_ignore_nvram(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+    
+    /* Find the BL boot-partition/ramdisk instruction... */
+    void* boot_partition_ldr = find_boot_partition_ldr(iboot_in);
+    
+    if(!boot_partition_ldr) {
+        printf("%s: Unable to find boot_partition_ldr!\n", __FUNCTION__);
+        return 0;
+    }
+    
+    char *bl_boot_partition = bl_search_down(boot_partition_ldr,0x100);
+    if(!bl_boot_partition) {
+        printf("%s: Unable to find the boot-partition BL! (Image may already be patched?)\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Patching boot_partition BL at %p...\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, bl_boot_partition));
+    
+    /* BL boot-partition/ramdisk --> MOVS R0, #0; MOVS R0, #0 */
+    *(uint32_t*)bl_boot_partition = bswap32(0x00200020);
+    
+    void* boot_ramdisk_ldr = find_boot_ramdisk_ldr(iboot_in);
+    
+    if(!boot_ramdisk_ldr) {
+        printf("%s: Unable to find boot_ramdisk_ldr!\n", __FUNCTION__);
+        return 0;
+    }
+    
+    char *bl_boot_ramdisk = bl_search_down(boot_ramdisk_ldr,0x100);
+    if(!bl_boot_ramdisk) {
+        printf("%s: Unable to find the boot-ramdisk BL! (Image may already be patched?)\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Patching boot_ramdisk BL at %p...\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, bl_boot_ramdisk));
+    
+        /* BL boot-partition/ramdisk --> MOVS R0, #0; MOVS R0, #0 */
+        *(uint32_t*)bl_boot_ramdisk = bswap32(0x00200020);
     
     printf("%s: Leaving...\n", __FUNCTION__);
     return 1;

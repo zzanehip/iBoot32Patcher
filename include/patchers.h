@@ -30,6 +30,7 @@ int patch_boot_args(struct iboot_img* iboot_in, const char* boot_args);
 int patch_cmd_handler(struct iboot_img* iboot_in, const char* cmd_str, uint32_t ptr);
 int patch_debug_enabled(struct iboot_img* iboot_in);
 int patch_rsa_check(struct iboot_img* iboot_in);
+int ignore_nvram_patch(struct iboot_img* iboot_in);
 int patch_ticket_check(struct iboot_img* iboot_in);
 int patch_remote_boot(struct iboot_img* iboot_in);
 int patch_bgcolor(struct iboot_img* iboot_in, const char* bgcolor);
