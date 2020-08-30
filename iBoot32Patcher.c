@@ -45,9 +45,9 @@
 
 #define HAS_ARG(x,y) (!strcmp(argv[i], x) && (i + y) < argc)
 
-int iBootPatcher(char *infile, char *outfile, char *args, char *RSA, char *debug, char *ticket);
+int iBootPatcher(char *infile, char *outfile, char *args, char *RSA, char *debug, char *ticket, char *kaslr);
 
-int iBootPatcher(char* infile, char* outfile, char* args, char* RSA, char* debug, char *ticket) {
+int iBootPatcher(char* infile, char* outfile, char* args, char* RSA, char* debug, char *ticket, char *kaslr) {
     int ret = 0;
     FILE* fp = NULL;
     uint32_t cmd_handler_ptr = 0;
@@ -57,6 +57,7 @@ int iBootPatcher(char* infile, char* outfile, char* args, char* RSA, char* debug
     bool debug_patch = false;
     bool ticket_patch = false;
     bool remote_patch = false;
+    bool kaslr_patch = false;
     char* custom_color = NULL;
     struct iboot_img iboot_in;
 
@@ -76,6 +77,10 @@ int iBootPatcher(char* infile, char* outfile, char* args, char* RSA, char* debug
         debug_patch = true;
     }
     
+     if (strcmp(kaslr, "TRUE") == 0) {
+        kaslr_patch = true;
+    }
+
     if (args && args[0]) {
         custom_boot_args = args;
     }
@@ -184,7 +189,15 @@ int iBootPatcher(char* infile, char* outfile, char* args, char* RSA, char* debug
         }
 
     }
-    
+    if (kaslr_patch) {
+        ret = patch_kaslr(&iboot_in);
+        if(!ret) {
+            printf("%s: Error doing patch_kaslr()!\n", __FUNCTION__);
+            free(iboot_in.buf);
+            return -1;
+        }
+    }
+
     /* Ensure that the loader has a shell. */
     if(has_recovery_console(&iboot_in) && cmd_handler_str) {
         ret = patch_cmd_handler(&iboot_in, cmd_handler_str, cmd_handler_ptr);
@@ -225,3 +238,8 @@ int iBootPatcher(char* infile, char* outfile, char* args, char* RSA, char* debug
     printf("%s: Quitting...\n", __FUNCTION__);
     return 0;
 }
+
+// int main() {
+//     int ret;
+//     ret = iBootPatcher("iBEC", "iBEC.o", "-v", "TRUE", "FALSE", "TRUE", "TRUE");
+// } //Main for is for testing purposes...You can add it back, if you'd like with args, etc...

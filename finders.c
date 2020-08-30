@@ -24,40 +24,192 @@
 #include <include/iBoot32Patcher.h>
 
 void* find_bl_verify_shsh(struct iboot_img* iboot_in) {
-	int os_vers = get_os_version(iboot_in);
+    int os_vers = get_os_version(iboot_in);
+    
+    /* Use the os-specific method for finding BL verify_shsh... */
+    if(os_vers >= 5 && os_vers <= 7) {
+        return find_bl_verify_shsh_5_6_7(iboot_in);
+    }
+    
+    return find_bl_verify_shsh_generic(iboot_in);
+}
 
-	/* Use the os-specific method for finding BL verify_shsh... */
-	if(os_vers >= 5 && os_vers <= 7) {
-		return find_bl_verify_shsh_5_6_7(iboot_in);
-	}
 
-	return find_bl_verify_shsh_generic(iboot_in);
+void* find_ldr_ecid(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+    
+    /* Find the LDR Rx, ='ECID' instruction... */
+    void* ldr_insn = find_next_LDR_insn_with_value(iboot_in, 'ECID');
+    if(!ldr_insn) {
+        printf("%s: Unable to find LDR ECID!\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Found LDR instruction at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_insn));
+    
+    /* Resolve the BL verify_shsh routine from found instruction... */
+    char *ldr_ecid = bl_search_down(ldr_insn,0x100);
+    if(!ldr_ecid) {
+        printf("%s: Unable to find a BL ECID! (Image may already be patched?)\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Found BL ECID at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_ecid));
+    
+    printf("%s: Leaving...\n", __FUNCTION__);
+    
+    return ldr_ecid;
+}
+
+void* find_ldr_bord(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+    
+    /* Find the LDR Rx, ='BORD' instruction... */
+    void* ldr_insn = find_next_LDR_insn_with_value(iboot_in, 'BORD');
+    if(!ldr_insn) {
+        printf("%s: Unable to find LDR insn!\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Found LDR BORD instruction at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_insn));
+    
+    /* Resolve the BL verify_shsh routine from found instruction... */
+    char *ldr_bord = bl_search_down(ldr_insn,0x100);
+    if(!ldr_bord) {
+        printf("%s: Unable to find a BL BORD! (Image may already be patched?)\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Found BL BORD at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_bord));
+    
+    printf("%s: Leaving...\n", __FUNCTION__);
+    
+    return ldr_bord;
+}
+
+void* find_ldr_prod(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+    
+    /* Find the LDR Rx, ='PROD' instruction... */
+    void* ldr_insn = find_next_LDR_insn_with_value(iboot_in, 'PROD');
+    if(!ldr_insn) {
+        printf("%s: Unable to find LDR insn!\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Found LDR PROD instruction at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_insn));
+    
+    /* Resolve the BL verify_shsh routine from found instruction... */
+    char *ldr_prod = bl_search_down(ldr_insn,0x100);
+    if(!ldr_prod) {
+        printf("%s: Unable to find a BL PROD! (Image may already be patched?)\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Found BL PROD at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_prod));
+    
+    printf("%s: Leaving...\n", __FUNCTION__);
+    
+    return ldr_prod;
+}
+
+void* find_ldr_sepo(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+    
+    /* Find the LDR Rx, ='SEPO' instruction... */
+    void* ldr_insn = find_next_LDR_insn_with_value(iboot_in, 'SEPO');
+    if(!ldr_insn) {
+        printf("%s: Unable to find LDR insn!\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Found LDR SEPO instruction at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_insn));
+    
+    /* Resolve the BL verify_shsh routine from found instruction... */
+    char *ldr_sepo = bl_search_down(ldr_insn,0x100);
+    if(!ldr_sepo) {
+        printf("%s: Unable to find a BL SEPO! (Image may already be patched?)\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Found BL SEPO at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, ldr_sepo));
+    
+    printf("%s: Leaving...\n", __FUNCTION__);
+    
+    return ldr_sepo;
+}
+
+void* find_rsa_check_4(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+    
+    /* Find the RSA check */
+    void* rsa_check_4 = memstr(iboot_in->buf, iboot_in->len, RSA_PATCH_IOS_4);
+    if(!rsa_check_4) {
+        printf("%s: Unable to find RSA check!\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Found RSA check at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, rsa_check_4));
+    
+    printf("%s: Leaving...\n", __FUNCTION__);
+    
+    return rsa_check_4;
+}
+
+
+void* find_kaslr(struct iboot_img* iboot_in, int version) {
+    printf("%s: Entering...\n", __FUNCTION__);
+    char* patch;
+    if (version == 6) {
+        patch = KASLR_PATCH_6;
+    }
+    else if (version == 7) {
+        patch = KASLR_PATCH_7;
+    }
+    else if (version == 8) {
+        patch = KASLR_PATCH_8;
+    }
+    else if (version == 9) {
+        patch = KASLR_PATCH_9;
+    }
+    void* kaslr_search = memstr(iboot_in->buf, iboot_in->len, patch);
+    if(!kaslr_search) {
+        printf("%s: Unable to find KASLR MOV.W !\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Found KASLR MOV.W at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, kaslr_search));
+    
+    
+    printf("%s: Leaving...\n", __FUNCTION__);
+    
+    return kaslr_search;
 }
 
 void* find_bl_verify_shsh_5_6_7(struct iboot_img* iboot_in) {
-	printf("%s: Entering...\n", __FUNCTION__);
-
-	/* Find the MOVW Rx, #'RT' instruction... */
-	void* movw = find_next_MOVW_insn_with_value(iboot_in->buf, iboot_in->len, 'RT');
-	if(!movw) {
-		printf("%s: Unable to find MOVW instruction!\n", __FUNCTION__);
-		return 0;
-	}
-
-	printf("%s: Found MOVW instruction at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, movw));
-
-	/* Resolve the BL verify_shsh routine from found instruction... */
-	void* bl_verify_shsh = find_bl_verify_shsh_insn(iboot_in, movw);
-	if(!bl_verify_shsh) {
-		printf("%s: Unable to find a BL verify_shsh! (Image may already be patched?)\n", __FUNCTION__);
-		return 0;
-	}
-
-	printf("%s: Found BL verify_shsh at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, bl_verify_shsh));
-
-	printf("%s: Leaving...\n", __FUNCTION__);
-
-	return bl_verify_shsh;
+    printf("%s: Entering...\n", __FUNCTION__);
+    
+    /* Find the MOVW Rx, #'RT' instruction... */
+    void* movw = find_next_MOVW_insn_with_value(iboot_in->buf, iboot_in->len, 'RT');
+    if(!movw) {
+        printf("%s: Unable to find MOVW instruction!\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Found MOVW instruction at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, movw));
+    
+    /* Resolve the BL verify_shsh routine from found instruction... */
+    void* bl_verify_shsh = find_bl_verify_shsh_insn(iboot_in, movw);
+    if(!bl_verify_shsh) {
+        printf("%s: Unable to find a BL verify_shsh! (Image may already be patched?)\n", __FUNCTION__);
+        return 0;
+    }
+    
+    printf("%s: Found BL verify_shsh at %p\n", __FUNCTION__, GET_IBOOT_FILE_OFFSET(iboot_in, bl_verify_shsh));
+    
+    printf("%s: Leaving...\n", __FUNCTION__);
+    
+    return bl_verify_shsh;
 }
 
 void* find_bl_verify_shsh_generic(struct iboot_img* iboot_in) {
@@ -161,5 +313,39 @@ void* find_verify_shsh_top(void* ptr) {
 	}
 	top++; // Thumb
 	return top;
+}
+
+void* find_boot_partition_ldr(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+    uint32_t boot_partition_loc = GET_IBOOT_ADDR(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "boot-partition", strlen("boot-partition")));
+    if (!boot_partition_loc) {
+        printf("%s: Failed to find boot-partition string\n", __FUNCTION__);
+        return 0;
+    }
+    printf("%s: Found boot-partition string: %p\n", __FUNCTION__, boot_partition_loc);
+    void * boot_partition_ldr = find_next_LDR_insn_with_value(iboot_in, boot_partition_loc);
+    if (!boot_partition_ldr) {
+        printf("%s: Failed to find boot-partition LDR\n", __FUNCTION__);
+        return 0;
+    }
+    printf("%s: Found boot-partition LDR: %p\n", __FUNCTION__, GET_IBOOT_ADDR(iboot_in, boot_partition_ldr));
+    return boot_partition_ldr;
+}
+
+void* find_boot_ramdisk_ldr(struct iboot_img* iboot_in) {
+    printf("%s: Entering...\n", __FUNCTION__);
+    uint32_t boot_ramdisk_loc = GET_IBOOT_ADDR(iboot_in, memmem(iboot_in -> buf, iboot_in -> len, "boot-ramdisk", strlen("boot-ramdisk")));
+    if (!boot_ramdisk_loc) {
+        printf("%s: Failed to find boot-ramdisk string\n", __FUNCTION__);
+        return 0;
+    }
+    printf("%s: Found boot-ramdisk string: %p\n", __FUNCTION__, boot_ramdisk_loc);
+    void * boot_ramdisk_ldr = find_next_LDR_insn_with_value(iboot_in, boot_ramdisk_loc);
+    if (!boot_ramdisk_ldr) {
+        printf("%s: Failed to find boot-ramdisk LDR\n", __FUNCTION__);
+        return 0;
+    }
+    printf("%s: Found boot-ramdisk LDR: %p\n", __FUNCTION__, GET_IBOOT_ADDR(iboot_in, boot_ramdisk_ldr));
+    return boot_ramdisk_ldr;
 }
 

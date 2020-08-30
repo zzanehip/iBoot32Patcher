@@ -23,9 +23,13 @@
 #include <include/iBoot32Patcher.h>
 
 #define RSA_PATCH_IOS_4 "\x4F\xF0\xFF\x30\xDD\xF8\x40\x24\xDB\xF8\x00\x30\x9A\x42\x01\xD0"
-
+#define KASLR_PATCH_6 "\x4F\xF0\x04\x50"
+#define KASLR_PATCH_7 "\x4F\xF0\x04\x55"
+#define KASLR_PATCH_8 "\x4F\xF0\x04\x54"
+#define KASLR_PATCH_9 "\x4F\xF0\x04\x51"
 void* find_bl_verify_shsh(struct iboot_img* iboot_in);
 void* find_rsa_check_4(struct iboot_img* iboot_in);
+void* find_kaslr(struct iboot_img* iboot_in, int version);
 void* find_ldr_ecid(struct iboot_img* iboot_in);
 void* find_ldr_bord(struct iboot_img* iboot_in);
 void* find_ldr_prod(struct iboot_img* iboot_in);

@@ -13,6 +13,7 @@ all : $(TARGET)
 
 $(TARGET) : $(OBJECTS)
 	$(LT) $(OBJECTS) -o $(TARGET)
+	$(CC) $(OBJECTS) -o patcher
 
 %.o : %.c 
 	$(CC) -c $(CFLAGS) $< -o $@
