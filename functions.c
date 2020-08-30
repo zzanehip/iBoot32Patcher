@@ -202,6 +202,8 @@ void* ldr32_search_up(const void* start_addr, int len) {
 	return pattern_search(start_addr, len, 0x0000F8DF, 0x0000FFFF, -1);
 }
 
+void* ldr32_search_up(const void* start_addr, int len);
+
 void* ldr_to(const void* loc) {
 	uintptr_t xref_target = (uintptr_t)loc;
 	uintptr_t i = xref_target;
