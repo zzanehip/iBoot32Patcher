@@ -13,7 +13,7 @@ all : $(TARGET)
 
 $(TARGET) : $(OBJECTS)
 	$(LT) $(OBJECTS) -o $(TARGET)
-	$(CC) $(OBJECTS) -o patcher
+	$(CC) $(OBJECTS) -o iBoot32Patcher
 
 %.o : %.c 
 	$(CC) -c $(CFLAGS) $< -o $@
